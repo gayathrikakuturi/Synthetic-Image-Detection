@@ -338,7 +338,7 @@ git clone https://github.com/gayathrikakuturi/Synthetic-Image-Detection.git
 ### 2️⃣ Navigate to project folder
 
 ```bash
-cd YOUR_REPO_NAME
+cd Synthetic-Image-Detection
 ```
 
 ### 3️⃣ Create virtual environment
@@ -400,8 +400,8 @@ This project is intended for **educational and research purposes only**.
 
 **Gayathri Kakuturi**  
 AI / Machine Learning Enthusiast  
+GitHub: https://github.com/gayathrikakuturi
 
-🔗 GitHub: https://github.com/gayathrikakuturi
 ---
 
 # ⭐ Support
