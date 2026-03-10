@@ -1,0 +1,16 @@
+# datasets
+datasets/
+
+# model weights
+*.h5
+*.keras
+
+# zip files
+*.zip
+
+# python cache
+__pycache__/
+*.pyc
+
+# virtual environment
+venv/

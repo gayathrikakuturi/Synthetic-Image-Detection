@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Synthetic Image Detection System</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #f0f4f8;
+    --surface:  #ffffff;
+    --surface2: #e8eef5;
+    --surface3: #dde5ef;
+    --border:   rgba(30,80,160,0.10);
+    --border2:  rgba(30,80,160,0.18);
+    --accent:   #1a6cf5;
+    --accent2:  #0040cc;
+    --accent3:  #00b4d8;
+    --success:  #00b894;
+    --danger:   #e84393;
+    --text:     #0d1a2e;
+    --text2:    #2a3a50;
+    --muted:    #5a7090;
+    --muted2:   #8a9db5;
+    --shadow-sm:  0 2px 8px rgba(20,60,120,0.07);
+    --shadow-md:  0 6px 24px rgba(20,60,120,0.10);
+    --shadow-lg:  0 16px 48px rgba(20,60,120,0.13);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(26,108,245,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,108,245,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px; height: 64px;
+    background: rgba(255,255,255,0.90);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .nav-logo {
+    font-weight: 800; font-size: 1.05rem; color: var(--accent);
+    letter-spacing: -0.02em; display: flex; align-items: center; gap: 9px;
+  }
+  .nav-logo .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 2.2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(1.5)} }
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.88rem; font-weight: 600; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--accent); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 22px; border-radius: 10px; border: none;
+    font-family: 'Manrope', sans-serif; font-size: 0.88rem; font-weight: 700;
+    cursor: pointer; transition: all 0.22s; text-decoration: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(26,108,245,0.28); }
+  .btn-primary:hover { background: var(--accent2); box-shadow: 0 6px 20px rgba(26,108,245,0.38); transform: translateY(-2px); }
+  .btn-secondary { background: var(--surface); color: var(--text2); border: 1.5px solid var(--border2); box-shadow: var(--shadow-sm); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: rgba(232,67,147,0.08); color: var(--danger); border: 1.5px solid rgba(232,67,147,0.22); }
+
+  .section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 8px; }
+  .section-title { font-size: clamp(1.6rem,3vw,2.2rem); font-weight: 800; letter-spacing: -0.03em; color: var(--text); margin-bottom: 40px; }
+  .section-divider { height: 1px; background: var(--border); margin: 0 48px; position: relative; z-index: 1; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; padding: 120px 24px 80px;
+    position: relative; z-index: 1; overflow: hidden;
+  }
+  .hero-glow { position: absolute; width: 800px; height: 800px; background: radial-gradient(circle, rgba(26,108,245,0.07) 0%, transparent 65%); top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; }
+  .hero-glow2 { position: absolute; width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,180,216,0.06) 0%, transparent 65%); top: 20%; left: 10%; pointer-events: none; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(26,108,245,0.08); border: 1.5px solid rgba(26,108,245,0.18);
+    padding: 6px 16px; border-radius: 100px; font-size: 0.75rem;
+    color: var(--accent); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 28px; animation: fadeUp 0.6s ease both;
+  }
+  .hero h1 {
+    font-size: clamp(2.4rem,6vw,4.8rem); font-weight: 800; line-height: 1.06;
+    letter-spacing: -0.04em; color: var(--text); margin-bottom: 22px;
+    animation: fadeUp 0.65s ease 0.1s both;
+  }
+  .hero h1 span { background: linear-gradient(135deg,var(--accent),var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .hero-sub { font-size: 1.1rem; color: var(--muted); max-width: 520px; margin: 0 auto 14px; font-weight: 400; animation: fadeUp 0.65s ease 0.18s both; }
+  .hero-desc { font-size: 0.92rem; color: var(--muted2); max-width: 540px; margin: 0 auto; animation: fadeUp 0.65s ease 0.26s both; line-height: 1.7; }
+  .hero-stats { display: flex; gap: 48px; margin-top: 48px; animation: fadeUp 0.65s ease 0.34s both; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 1.5rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; }
+  .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 3px; font-weight: 500; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+  /* STEPS */
+  .steps-section { padding: 80px 48px; position: relative; z-index: 1; }
+  .steps-track { display: flex; align-items: flex-start; gap: 0; position: relative; max-width: 1100px; margin: 0 auto; }
+  .steps-track::before { content: ''; position: absolute; top: 32px; left: 10%; right: 10%; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), var(--accent3), transparent); opacity: 0.22; }
+  .step-item { flex: 1; text-align: center; padding: 0 12px; }
+  .step-icon { width: 64px; height: 64px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; font-size: 1.4rem; position: relative; transition: all 0.3s; box-shadow: var(--shadow-sm); }
+  .step-item:hover .step-icon { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(26,108,245,0.10), var(--shadow-md); transform: translateY(-4px); }
+  .step-num { position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; background: var(--accent); color: #fff; border-radius: 50%; font-size: 0.62rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .step-title { font-weight: 800; font-size: 0.85rem; color: var(--text); margin-bottom: 5px; }
+  .step-desc { font-size: 0.77rem; color: var(--muted); line-height: 1.45; }
+
+  /* UPLOAD */
+  .upload-section { padding: 40px 48px 80px; position: relative; z-index: 1; }
+  .upload-card { max-width: 760px; margin: 0 auto; background: var(--surface); border: 1.5px solid var(--border); border-radius: 24px; padding: 44px; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; }
+  .upload-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent3)); }
+  .upload-tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: 12px; padding: 4px; margin-bottom: 28px; width: fit-content; border: 1px solid var(--border); }
+  .upload-tab { padding: 8px 20px; border-radius: 9px; border: none; background: transparent; color: var(--muted); font-family: 'Manrope', sans-serif; font-size: 0.84rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .upload-tab.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+  .drop-zone { border: 2px dashed rgba(26,108,245,0.22); border-radius: 16px; padding: 56px 24px; text-align: center; cursor: pointer; transition: all 0.3s; background: rgba(26,108,245,0.02); }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: rgba(26,108,245,0.05); }
+  .drop-icon { font-size: 2.8rem; margin-bottom: 14px; display: block; }
+  .drop-title { font-weight: 800; font-size: 1.05rem; color: var(--text); margin-bottom: 7px; }
+  .drop-sub { color: var(--muted); font-size: 0.86rem; }
+  .drop-sub span { color: var(--accent); font-weight: 600; cursor: pointer; }
+  #fileInput { display: none; }
+  #preview-wrap { display: none; text-align: center; margin-top: 16px; }
+  #preview-wrap img { max-height: 220px; border-radius: 12px; border: 1.5px solid var(--border); box-shadow: var(--shadow-md); }
+  .webcam-panel { display: none; text-align: center; }
+  #webcamVideo { width: 40%; max-width: 480px; border-radius: 12px; border: 1.5px solid var(--border); }
+  #webcamCanvas { display: none; }
+  .webcam-controls { display: flex; gap: 12px; justify-content: center; margin-top: 14px; }
+  .analyze-row { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+  .file-info { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
+
+  /* FLIP CARDS */
+  .features-section { padding: 80px 48px; position: relative; z-index: 1; }
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; }
+  .flip-card { perspective: 1000px; height: 190px; cursor: pointer; }
+  .flip-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4,0,0.2,1); }
+  .flip-card:hover .flip-inner { transform: rotateY(180deg); }
+  .flip-front, .flip-back { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 18px; padding: 26px; border: 1.5px solid var(--border); box-shadow: var(--shadow-sm); }
+  .flip-front { background: var(--surface); display: flex; flex-direction: column; justify-content: space-between; }
+  .flip-back { background: var(--accent); border-color: var(--accent); transform: rotateY(180deg); display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 8px 28px rgba(26,108,245,0.30); }
+  .flip-back p { font-size: 0.86rem; color: rgba(255,255,255,0.93); line-height: 1.65; font-weight: 500; }
+  .card-icon { font-size: 1.7rem; margin-bottom: 7px; }
+  .card-title { font-weight: 800; font-size: 0.95rem; color: var(--text); }
+  .card-tag { font-size: 0.7rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; }
+
+  /* APPLICATIONS */
+  .apps-section { padding: 80px 48px; position: relative; z-index: 1; }
+  .app-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; transition: all 0.3s; box-shadow: var(--shadow-sm); }
+  .app-card:hover { border-color: rgba(26,108,245,0.28); transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .app-icon { width: 46px; height: 46px; background: rgba(26,108,245,0.08); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 14px; }
+  .app-title { font-weight: 800; font-size: 0.93rem; color: var(--text); margin-bottom: 7px; }
+  .app-desc { font-size: 0.81rem; color: var(--muted); line-height: 1.55; }
+
+  /* HOW IT WORKS */
+  .how-section { padding: 80px 48px; position: relative; z-index: 1; }
+  .how-card { max-width: 920px; margin: 0 auto; background: var(--surface); border: 1.5px solid var(--border); border-radius: 24px; padding: 52px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; }
+  .how-card::after { content: ''; position: absolute; bottom: -60px; right: -60px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(26,108,245,0.06) 0%, transparent 70%); pointer-events: none; }
+  .how-text h2 { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); margin-bottom: 18px; }
+  .how-text p { color: var(--muted); font-size: 0.9rem; margin-bottom: 10px; line-height: 1.7; }
+  .how-visual { display: flex; flex-direction: column; gap: 10px; }
+  .pipeline-step { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; padding: 13px 16px; display: flex; align-items: center; gap: 12px; font-size: 0.84rem; transition: all 0.25s; }
+  .pipeline-step:hover { border-color: var(--accent); background: rgba(26,108,245,0.04); }
+  .pipeline-step .p-icon { font-size: 1.15rem; }
+  .pipeline-step .p-title { font-weight: 700; font-size: 0.84rem; color: var(--text); }
+  .pipeline-step .p-sub { font-size: 0.73rem; color: var(--muted); }
+  .pipeline-arrow { text-align: center; color: var(--muted2); font-size: 0.85rem; }
+
+  /* FOOTER */
+  footer { border-top: 1px solid var(--border); padding: 40px 48px; position: relative; z-index: 1; background: var(--surface); }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+  .footer-logo { font-weight: 800; color: var(--accent); font-size: 0.98rem; }
+  .footer-tech { font-size: 0.78rem; color: var(--muted); }
+  .footer-tech span { color: var(--accent); font-weight: 600; }
+  .footer-copy { font-size: 0.76rem; color: var(--muted2); }
+
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; }
+    .steps-section,.upload-section,.features-section,.apps-section,.how-section { padding: 48px 20px; }
+    .section-divider { margin: 0 20px; }
+    .steps-track { flex-wrap: wrap; }
+    .steps-track::before { display: none; }
+    .step-item { flex: 0 0 50%; margin-bottom: 24px; }
+    .how-card { grid-template-columns: 1fr; padding: 28px; }
+    .hero-stats { gap: 24px; flex-wrap: wrap; justify-content: center; }
+    footer { padding: 28px 20px; }
+    .footer-inner { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><div class="dot"></div>AI·SynDetect</div>
+  <ul class="nav-links">
+    <li><a href="#upload">Analyze</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="{{ url_for('learnmore') }}">Learn More</a></li>
+  </ul>
+  <a href="#upload" class="btn btn-primary" style="padding:8px 18px;font-size:0.84rem;">Try Now</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="hero-badge">⚡ Powered by MobileNetV2 + GradCAM</div>
+  <h1><span>Synthetic Image</span><br>Detection System</h1>
+  <p class="hero-sub">Detect AI-generated images using deep learning and explainable AI techniques.</p>
+  <p class="hero-desc">The system analyzes images to determine whether they are real or synthetically generated using deep learning models and visual explanation techniques that highlight decision-making regions.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">MobileNetV2</div><div class="stat-label">Deep Learning Model</div></div>
+    <div class="stat"><div class="stat-num">GradCAM</div><div class="stat-label">Explainable AI</div></div>
+    <div class="stat"><div class="stat-num">Real-time</div><div class="stat-label">Analysis</div></div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<section class="steps-section" id="steps">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="section-label">Process Flow</div>
+    <div class="section-title">From Upload to Prediction</div>
+    <div class="steps-track">
+      <div class="step-item"><div class="step-icon">📤<span class="step-num">1</span></div><div class="step-title">Upload Image</div><div class="step-desc">Drag &amp; drop or capture via webcam</div></div>
+      <div class="step-item"><div class="step-icon">🧠<span class="step-num">2</span></div><div class="step-title">AI Processing</div><div class="step-desc">MobileNetV2 analyzes pixel patterns</div></div>
+      <div class="step-item"><div class="step-icon">🔬<span class="step-num">3</span></div><div class="step-title">Feature Extraction</div><div class="step-desc">Texture, edges &amp; lighting analyzed</div></div>
+      <div class="step-item"><div class="step-icon">📊<span class="step-num">4</span></div><div class="step-title">Confidence Score</div><div class="step-desc">Probability score for prediction</div></div>
+      <div class="step-item"><div class="step-icon">🗺️<span class="step-num">5</span></div><div class="step-title">GradCAM Visual</div><div class="step-desc">Heatmap of influential regions</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<section class="upload-section" id="upload">
+  <div style="max-width:1100px;margin:0 auto 32px;">
+    <div class="section-label">Image Analysis</div>
+    <div class="section-title">Analyze Your Image</div>
+  </div>
+  <form id="analyzeForm" action="/analyze" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="webcam" id="webcamData">
+    <div class="upload-card">
+      <div class="upload-tabs">
+        <button type="button" class="upload-tab active" onclick="switchTab('file',this)">📁 File Upload</button>
+        <button type="button" class="upload-tab" onclick="switchTab('webcam',this)">📷 Webcam</button>
+      </div>
+      <div id="filePanel">
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+          <span class="drop-icon">🖼️</span>
+          <div class="drop-title">Drag &amp; drop your image here</div>
+          <div class="drop-sub">Supports JPG, PNG, WEBP · <span>Browse files</span></div>
+          <input type="file" id="fileInput" name="image" accept="image/*">
+        </div>
+        <div id="preview-wrap"><img id="previewImg" src="" alt="Preview"></div>
+      </div>
+      <div id="webcamPanel" class="webcam-panel">
+        <video id="webcamVideo" autoplay playsinline></video>
+        <canvas id="webcamCanvas"></canvas>
+        <div id="capturedWrap" style="display:none;text-align:center;">
+          <img id="capturedImg" style="max-height:200px;border-radius:12px;border:1.5px solid var(--border);box-shadow:var(--shadow-md);">
+        </div>
+        <div class="webcam-controls">
+          <button type="button" class="btn btn-secondary" id="startCamBtn" onclick="startWebcam()">▶ Start Camera</button>
+          <button type="button" class="btn btn-primary" id="captureBtn" onclick="capturePhoto()" style="display:none;">📸 Capture</button>
+          <button type="button" class="btn btn-danger" id="recaptureBtn" onclick="recapture()" style="display:none;">🔄 Retake</button>
+        </div>
+      </div>
+      <div class="analyze-row">
+        <div class="file-info" id="fileInfo">No file selected</div>
+        <button type="submit" class="btn btn-primary" id="analyzeBtn" style="padding:12px 28px;font-size:0.92rem;">🔍 Analyze Image</button>
+      </div>
+    </div>
+  </form>
+</section>
+
+<div class="section-divider"></div>
+
+<section class="features-section" id="features">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="section-label">Core Capabilities</div>
+    <div class="section-title">What Makes This System Powerful</div>
+    <div class="cards-grid">
+      <div class="flip-card"><div class="flip-inner"><div class="flip-front"><div><div class="card-icon">🧠</div><div class="card-title">Deep Learning Detection</div></div><div class="card-tag">MobileNetV2 · Hover to learn →</div></div><div class="flip-back"><p>Uses a MobileNetV2 deep learning model trained on large datasets to classify images as real or synthetic with high accuracy.</p></div></div></div>
+      <div class="flip-card"><div class="flip-inner"><div class="flip-front"><div><div class="card-icon">🗺️</div><div class="card-title">Explainable AI Visualization</div></div><div class="card-tag">GradCAM · Hover to learn →</div></div><div class="flip-back"><p>GradCAM highlights the exact regions of the image that most influenced the model's prediction, providing visual transparency.</p></div></div></div>
+      <div class="flip-card"><div class="flip-inner"><div class="flip-front"><div><div class="card-icon">🔍</div><div class="card-title">Artifact Pattern Detection</div></div><div class="card-tag">Pattern Analysis · Hover to learn →</div></div><div class="flip-back"><p>Identifies common synthetic artifacts such as unnatural textures, irregular edges, and structural inconsistencies typical of AI-generated images.</p></div></div></div>
+      <div class="flip-card"><div class="flip-inner"><div class="flip-front"><div><div class="card-icon">📊</div><div class="card-title">Confidence Estimation</div></div><div class="card-tag">Probability · Hover to learn →</div></div><div class="flip-back"><p>Provides a probability score indicating how confident the model is in its prediction, allowing you to gauge reliability of results.</p></div></div></div>
+      <div class="flip-card"><div class="flip-inner"><div class="flip-front"><div><div class="card-icon">⚗️</div><div class="card-title">Feature Contribution Analysis</div></div><div class="card-tag">Interpretability · Hover to learn →</div></div><div class="flip-back"><p>Extracts interpretable features including texture consistency, lighting patterns, and edge artifacts to explain reasoning behind detections.</p></div></div></div>
+      <div class="flip-card"><div class="flip-inner"><div class="flip-front"><div><div class="card-icon">🌐</div><div class="card-title">Multi-Domain Detection</div></div><div class="card-tag">Versatile · Hover to learn →</div></div><div class="flip-back"><p>Supports detection across faces, objects, animals, and landscapes for broad real-world applicability.</p></div></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<section class="apps-section" id="applications">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="section-label">Real-World Use</div>
+    <div class="section-title">Applications</div>
+    <div class="cards-grid">
+      <div class="app-card"><div class="app-icon">📰</div><div class="app-title">Digital Media Verification</div><div class="app-desc">Helps verify authenticity of images used in online media and journalism before publication.</div></div>
+      <div class="app-card"><div class="app-icon">🚫</div><div class="app-title">Fake Content Detection</div><div class="app-desc">Detects AI-generated images used for misinformation campaigns or digital manipulation.</div></div>
+      <div class="app-card"><div class="app-icon">📱</div><div class="app-title">Social Media Moderation</div><div class="app-desc">Helps platforms identify and filter synthetic content before it spreads to users.</div></div>
+      <div class="app-card"><div class="app-icon">🔐</div><div class="app-title">Cybersecurity Investigations</div><div class="app-desc">Assists investigators in identifying manipulated or synthetic visual evidence in cases.</div></div>
+      <div class="app-card"><div class="app-icon">🎓</div><div class="app-title">Academic Research</div><div class="app-desc">Useful for research in AI-generated media detection, explainable AI, and digital forensics.</div></div>
+      <div class="app-card"><div class="app-icon">✅</div><div class="app-title">Content Authenticity Validation</div><div class="app-desc">Helps organizations confirm whether digital images in their archives are genuine.</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<section class="how-section" id="how">
+  <div class="how-card">
+    <div class="how-text">
+      <div class="section-label">Under the Hood</div>
+      <h2>How the System Works</h2>
+      <p>The system uses MobileNetV2 to detect synthetic imagery by analyzing low-level and high-level visual features.</p>
+      <p>The model evaluates image patterns, textures, edge behavior, and lighting inconsistencies common in AI-generated content.</p>
+      <p>GradCAM highlights the specific regions responsible for the prediction, making results interpretable and trustworthy.</p>
+      <a href="{{ url_for('learnmore') }}">Learn More</a>
+    </div>
+    <div class="how-visual">
+      <div class="pipeline-step"><span class="p-icon">🖼️</span><div><div class="p-title">Image Input</div><div class="p-sub">Raw image resized to 224×224</div></div></div>
+      <div class="pipeline-arrow">↓</div>
+      <div class="pipeline-step"><span class="p-icon">⚙️</span><div><div class="p-title">Preprocessing</div><div class="p-sub">Normalization &amp; color conversion</div></div></div>
+      <div class="pipeline-arrow">↓</div>
+      <div class="pipeline-step"><span class="p-icon">🧠</span><div><div class="p-title">MobileNetV2 Inference</div><div class="p-sub">Convolutional feature extraction</div></div></div>
+      <div class="pipeline-arrow">↓</div>
+      <div class="pipeline-step"><span class="p-icon">🗺️</span><div><div class="p-title">GradCAM + Features</div><div class="p-sub">Heatmap &amp; interpretable outputs</div></div></div>
+      <div class="pipeline-arrow">↓</div>
+      <div class="pipeline-step"><span class="p-icon">✅</span><div><div class="p-title">Prediction Output</div><div class="p-sub">Real / Fake + confidence score</div></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">AI·SynDetect</div>
+    <div class="footer-tech">Built using <span>TensorFlow</span> · <span>MobileNetV2</span> · <span>GradCAM</span></div>
+    <div class="footer-copy">© 2025 AI Synthetic Image Detection System. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+function switchTab(tab, btn) {
+  document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('filePanel').style.display = tab === 'file' ? 'block' : 'none';
+  document.getElementById('webcamPanel').style.display = tab === 'webcam' ? 'block' : 'none';
+  if (tab === 'file') stopWebcam();
+}
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); const f = e.dataTransfer.files[0]; if (f) showPreview(f); });
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); });
+function showPreview(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('preview-wrap').style.display = 'block';
+    document.getElementById('fileInfo').textContent = file.name + ' · ' + (file.size/1024).toFixed(1) + ' KB';
+    dropZone.style.padding = '16px';
+  };
+  reader.readAsDataURL(file);
+}
+let stream = null;
+async function startWebcam() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    document.getElementById('webcamVideo').srcObject = stream;
+    document.getElementById('webcamVideo').style.display = 'block';
+    document.getElementById('startCamBtn').style.display = 'none';
+    document.getElementById('captureBtn').style.display = 'inline-flex';
+  } catch (err) { alert('Camera access denied or unavailable.'); }
+}
+function capturePhoto() {
+  const video = document.getElementById('webcamVideo');
+  const canvas = document.getElementById('webcamCanvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const dataURL = canvas.toDataURL('image/jpeg');
+  document.getElementById('webcamData').value = dataURL;
+  document.getElementById('capturedImg').src = dataURL;
+  document.getElementById('capturedWrap').style.display = 'block';
+  document.getElementById('webcamVideo').style.display = 'none';
+  document.getElementById('captureBtn').style.display = 'none';
+  document.getElementById('recaptureBtn').style.display = 'inline-flex';
+  document.getElementById('fileInfo').textContent = 'Webcam capture ready';
+  stopWebcam();
+}
+function recapture() {
+  document.getElementById('capturedWrap').style.display = 'none';
+  document.getElementById('recaptureBtn').style.display = 'none';
+  document.getElementById('webcamData').value = '';
+  document.getElementById('fileInfo').textContent = 'No file selected';
+  startWebcam();
+}
+function stopWebcam() { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } }
+document.getElementById('analyzeForm').addEventListener('submit', function(e) {
+  const hasFile = fileInput.files.length > 0;
+  const hasWebcam = document.getElementById('webcamData').value !== '';
+  if (!hasFile && !hasWebcam) { e.preventDefault(); alert('Please select an image or capture one via webcam.'); return; }
+  document.getElementById('analyzeBtn').innerHTML = '⏳ Analyzing...';
+  document.getElementById('analyzeBtn').disabled = true;
+});
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => { if (entry.isIntersecting) { entry.target.style.opacity='1'; entry.target.style.transform='translateY(0)'; } });
+}, { threshold: 0.08 });
+document.querySelectorAll('.flip-card,.app-card,.pipeline-step').forEach(el => {
+  el.style.opacity='0'; el.style.transform='translateY(16px)';
+  el.style.transition='opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>

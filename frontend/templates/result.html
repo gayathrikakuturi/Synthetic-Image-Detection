@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analysis Result · AI SynDetect</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #f0f4f8;
+    --surface:  #ffffff;
+    --surface2: #e8eef5;
+    --border:   rgba(30,80,160,0.10);
+    --border2:  rgba(30,80,160,0.18);
+    --accent:   #1a6cf5;
+    --accent2:  #0040cc;
+    --accent3:  #00b4d8;
+    --success:  #00b894;
+    --danger:   #e84393;
+    --text:     #0d1a2e;
+    --text2:    #2a3a50;
+    --muted:    #5a7090;
+    --muted2:   #8a9db5;
+    --shadow-sm:  0 2px 8px rgba(20,60,120,0.07);
+    --shadow-md:  0 6px 24px rgba(20,60,120,0.10);
+    --shadow-lg:  0 16px 48px rgba(20,60,120,0.13);
+
+    --label-color: {{ 'var(--danger)' if data.label == 'Fake' else 'var(--success)' }};
+    --label-bg:    {{ 'rgba(232,67,147,0.07)' if data.label == 'Fake' else 'rgba(0,184,148,0.07)' }};
+    --label-border:{{ 'rgba(232,67,147,0.22)' if data.label == 'Fake' else 'rgba(0,184,148,0.22)' }};
+    --label-shadow:{{ 'rgba(232,67,147,0.18)' if data.label == 'Fake' else 'rgba(0,184,148,0.18)' }};
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Manrope', sans-serif; font-size: 16px; line-height: 1.6; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(26,108,245,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(26,108,245,0.03) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none; z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px; height: 64px;
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  }
+  .nav-logo { font-weight: 800; font-size: 1.05rem; color: var(--accent); display: flex; align-items: center; gap: 9px; }
+  .nav-logo .dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 2.2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(1.5)} }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 22px; border-radius: 10px; border: none;
+    font-family: 'Manrope', sans-serif; font-size: 0.88rem; font-weight: 700;
+    cursor: pointer; transition: all 0.22s; text-decoration: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(26,108,245,0.28); }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,108,245,0.38); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border2); }
+  .btn-ghost:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* PAGE */
+  .page { max-width: 1200px; margin: 0 auto; padding: 36px 48px 80px; position: relative; z-index: 1; }
+
+  /* RESULT HEADER */
+  .result-header {
+    background: var(--surface); border: 1.5px solid var(--label-border);
+    border-radius: 24px; padding: 36px 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 24px; margin-bottom: 24px;
+    box-shadow: 0 8px 32px var(--label-shadow);
+    position: relative; overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+  .result-header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--label-color); }
+  .result-header::after { content: ''; position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; background: radial-gradient(circle, var(--label-bg) 0%, transparent 70%); pointer-events: none; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  .result-tag { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; }
+  .verdict {
+    font-size: clamp(2.8rem,6vw,4.5rem); font-weight: 800;
+    letter-spacing: -0.04em; color: var(--label-color); line-height: 1;
+  }
+  .verdict-sub { font-size: 0.88rem; color: var(--muted); margin-top: 8px; font-weight: 500; }
+
+  /* CONFIDENCE RING */
+  .ring-wrap { position: relative; width: 120px; height: 120px; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--surface2); stroke-width: 8; }
+  .ring-fill {
+    fill: none; stroke: var(--label-color); stroke-width: 8; stroke-linecap: round;
+    stroke-dasharray: 339.3;
+    stroke-dashoffset: calc(339.3 - (339.3 * {{ data.confidence }} / 100));
+    filter: drop-shadow(0 0 5px var(--label-shadow));
+  }
+  .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-num { font-size: 1.55rem; font-weight: 800; color: var(--label-color); line-height: 1; }
+  .ring-lbl { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; font-weight: 600; }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+  /* CARD */
+  .card {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 20px; padding: 26px;
+    box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+  .card-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); margin-bottom: 18px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .card-title::before { content: ''; display: inline-block; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; }
+
+  /* IMAGE */
+  .img-wrap { border-radius: 14px; overflow: hidden; background: var(--surface2); border: 1.5px solid var(--border); }
+  .img-wrap img { width: 100%; height: 260px; object-fit: contain; display: block; }
+  .img-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,0.95); border: 1px solid var(--border);
+    padding: 4px 12px; border-radius: 100px; font-size: 0.73rem; font-weight: 600;
+    color: var(--text2); margin-top: 12px; box-shadow: var(--shadow-sm);
+  }
+  .img-label { font-weight: 800; font-size: 0.88rem; color: var(--text); margin-top: 12px; }
+  .img-sub { font-size: 0.77rem; color: var(--muted); margin-top: 2px; }
+
+  /* FEATURE BARS */
+  .feat-row { margin-bottom: 18px; }
+  .feat-row:last-child { margin-bottom: 0; }
+  .feat-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+  .feat-name { font-size: 0.84rem; font-weight: 600; color: var(--text2); }
+  .feat-val { font-size: 0.88rem; font-weight: 800; color: var(--accent); }
+  .bar-track { height: 6px; background: var(--surface2); border-radius: 100px; overflow: hidden; border: 1px solid var(--border); }
+  .bar-fill { height: 100%; border-radius: 100px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+
+  /* EVIDENCE */
+  .evidence-box {
+    background: rgba(26,108,245,0.04); border: 1.5px solid rgba(26,108,245,0.14);
+    border-radius: 14px; padding: 18px 20px;
+  }
+  .evidence-text { font-size: 0.88rem; color: var(--text2); line-height: 1.7; }
+  .obs-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .obs-item { display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; color: var(--muted); }
+  .obs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 7px; flex-shrink: 0; }
+
+  /* PROBABILITY */
+  .prob-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .prob-row:last-child { margin-bottom: 0; }
+  .prob-label-row { display: flex; justify-content: space-between; }
+  .prob-ok { font-size: 0.86rem; font-weight: 700; color: var(--success); }
+  .prob-ng { font-size: 0.86rem; font-weight: 700; color: var(--danger); }
+  .prob-num { font-size: 0.96rem; font-weight: 800; }
+  .prob-track { height: 9px; background: var(--surface2); border-radius: 100px; overflow: hidden; border: 1px solid var(--border); }
+  .prob-fill-ok { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--success), var(--accent3)); }
+  .prob-fill-ng { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--danger), #c0135e); }
+  .prob-note { margin-top: 16px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; font-size: 0.85rem; color: var(--text2); line-height: 1.6; }
+
+  /* DONUT */
+  .donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .donut-legend { display: flex; gap: 20px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.82rem; font-weight: 600; color: var(--text2); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* BOTTOM */
+  .bottom-bar {
+    margin-top: 36px; display: flex; align-items: center; justify-content: center; gap: 16px;
+    padding: 26px; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 20px; box-shadow: var(--shadow-sm);
+    animation: fadeUp 0.5s ease 0.4s both;
+  }
+  .bottom-bar p { color: var(--muted); font-size: 0.9rem; font-weight: 500; }
+
+  @media (max-width: 768px) {
+    nav { padding: 0 20px; }
+    .page { padding: 24px 20px 60px; }
+    .result-header { padding: 24px 22px; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><div class="dot"></div>AI·SynDetect</div>
+  <a href="/" class="btn btn-ghost">← New Analysis</a>
+</nav>
+
+<div class="page">
+
+  <!-- PREDICTION HEADER -->
+  <div class="result-header">
+    <div>
+      <div class="result-tag">Prediction Result</div>
+      <div class="verdict">{{ data.label }}</div>
+      <div class="verdict-sub">This image is classified as <strong>{{ 'AI-generated / synthetic' if data.label == 'Fake' else 'a real photograph' }}</strong> by the model.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <div class="ring-wrap">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="54"/>
+          <circle class="ring-fill" cx="60" cy="60" r="54"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-num">{{ data.confidence }}%</div>
+          <div class="ring-lbl">Confidence</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMAGE COMPARISON -->
+  <div class="grid-2">
+    <div class="card" style="animation-delay:0.08s">
+      <div class="card-title">Original Image</div>
+      <div class="img-wrap">
+        <img src="data:image/jpeg;base64,{{ data.original }}" alt="Original Image">
+      </div>
+      <div class="img-badge">📷 Input Image</div>
+      <div class="img-label">Original Upload</div>
+      <div class="img-sub">Raw image submitted for analysis</div>
+    </div>
+    <div class="card" style="animation-delay:0.14s">
+      <div class="card-title">GradCAM Visualization</div>
+      <div class="img-wrap">
+        <img src="data:image/jpeg;base64,{{ data.heatmap }}" alt="GradCAM Overlay">
+      </div>
+      <div class="img-badge">🔥 Model Attention</div>
+      <div class="img-label">Gradient-weighted Class Activation Map</div>
+      <div class="img-sub">Highlighted regions influenced the prediction most</div>
+    </div>
+  </div>
+
+  <!-- FEATURES + EVIDENCE -->
+  <div class="grid-2">
+    <div class="card" style="animation-delay:0.20s">
+      <div class="card-title">Feature Analysis</div>
+      <div class="feat-row">
+        <div class="feat-top"><span class="feat-name">🌀 Texture Consistency</span><span class="feat-val">{{ data.texture }}%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:{{ [data.texture,100]|min }}%;background:linear-gradient(90deg,var(--accent),var(--accent3))"></div></div>
+      </div>
+      <div class="feat-row">
+        <div class="feat-top"><span class="feat-name">💡 Lighting Consistency</span><span class="feat-val">{{ data.lighting }}%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:{{ [data.lighting,100]|min }}%;background:linear-gradient(90deg,#f5a623,var(--danger))"></div></div>
+      </div>
+      <div class="feat-row">
+        <div class="feat-top"><span class="feat-name">📐 Edge Artifact Presence</span><span class="feat-val">{{ data.edges }}%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:{{ [data.edges,100]|min }}%;background:linear-gradient(90deg,var(--danger),#c0135e)"></div></div>
+      </div>
+      <div class="feat-row">
+        <div class="feat-top"><span class="feat-name">🌄 Background Influence</span><span class="feat-val">{{ data.background }}%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:{{ [data.background,100]|min }}%;background:linear-gradient(90deg,var(--success),var(--accent))"></div></div>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay:0.26s">
+      <div class="card-title">Evidence &amp; Observations</div>
+      <div class="evidence-box">
+        <div class="evidence-text">{{ data.explanation }}</div>
+        <div class="obs-list">
+          {% if data.texture > 60 %}
+          <div class="obs-item"><div class="obs-dot"></div><span>Irregular texture patterns detected in the image structure</span></div>
+          {% endif %}
+          {% if data.edges > 60 %}
+          <div class="obs-item"><div class="obs-dot"></div><span>Edge artifacts observed in image boundary regions</span></div>
+          {% endif %}
+          {% if data.lighting < 40 %}
+          <div class="obs-item"><div class="obs-dot"></div><span>Lighting inconsistency observed across the image</span></div>
+          {% endif %}
+          {% if data.background > 60 %}
+          <div class="obs-item"><div class="obs-dot"></div><span>Background attention patterns identified via GradCAM</span></div>
+          {% endif %}
+          {% if data.texture <= 60 and data.edges <= 60 and data.lighting >= 40 and data.background <= 60 %}
+          <div class="obs-item"><div class="obs-dot" style="background:var(--success)"></div><span>Natural structural patterns consistent with real photographs</span></div>
+          <div class="obs-item"><div class="obs-dot" style="background:var(--success)"></div><span>Texture and lighting within expected ranges for authentic images</span></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROBABILITY -->
+  <div class="grid-2">
+    <div class="card" style="animation-delay:0.32s">
+      <div class="card-title">Probability Distribution</div>
+      <div class="prob-row">
+        <div class="prob-label-row"><span class="prob-ok">✅ Real Probability</span><span class="prob-num" style="color:var(--success)">{{ data.real_prob }}%</span></div>
+        <div class="prob-track"><div class="prob-fill-ok" style="width:{{ data.real_prob }}%"></div></div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-label-row"><span class="prob-ng">🚫 Fake Probability</span><span class="prob-num" style="color:var(--danger)">{{ data.fake_prob }}%</span></div>
+        <div class="prob-track"><div class="prob-fill-ng" style="width:{{ data.fake_prob }}%"></div></div>
+      </div>
+      <div class="prob-note">
+        The model assigned <strong style="color:var(--success)">{{ data.real_prob }}%</strong> probability of being real and <strong style="color:var(--danger)">{{ data.fake_prob }}%</strong> probability of being synthetic. Final verdict: <strong style="color:var(--label-color)">{{ data.label }}</strong> with {{ data.confidence }}% confidence.
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay:0.38s">
+      <div class="card-title">Probability Chart</div>
+      <div class="donut-wrap">
+        <svg width="180" height="180" viewBox="0 0 180 180" style="overflow:visible;">
+          <circle cx="90" cy="90" r="70" fill="none" stroke="#e8eef5" stroke-width="22"/>
+          <circle cx="90" cy="90" r="70" fill="none"
+            stroke="#e84393" stroke-width="22"
+            stroke-dasharray="{{ (data.fake_prob / 100) * 439.8 }} {{ 439.8 - (data.fake_prob / 100) * 439.8 }}"
+            stroke-dashoffset="109.96"
+            stroke-linecap="round"
+            transform="rotate(-90 90 90)"
+            style="filter:drop-shadow(0 0 5px rgba(232,67,147,0.35))"/>
+          <circle cx="90" cy="90" r="70" fill="none"
+            stroke="#00b894" stroke-width="22"
+            stroke-dasharray="{{ (data.real_prob / 100) * 439.8 }} {{ 439.8 - (data.real_prob / 100) * 439.8 }}"
+            stroke-dashoffset="{{ 439.8 - (data.fake_prob / 100) * 439.8 + 109.96 }}"
+            stroke-linecap="round"
+            transform="rotate(-90 90 90)"
+            style="filter:drop-shadow(0 0 5px rgba(0,184,148,0.35))"/>
+          <text x="90" y="83" text-anchor="middle" font-family="Manrope,sans-serif" font-size="22" font-weight="800"
+            fill="{{ '#e84393' if data.label == 'Fake' else '#00b894' }}">{{ data.confidence }}%</text>
+          <text x="90" y="101" text-anchor="middle" font-family="Manrope,sans-serif" font-size="11" font-weight="600" fill="#8a9db5">Confidence</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#00b894"></div>Real ({{ data.real_prob }}%)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#e84393"></div>Fake ({{ data.fake_prob }}%)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="bottom-bar">
+    <p>Want to check another image?</p>
+    <a href="/" class="btn btn-primary">🔍 Analyze Another Image</a>
+  </div>
+
+</div>
+
+<script>
+window.addEventListener('load', () => {
+  document.querySelectorAll('.bar-fill,.prob-fill-ok,.prob-fill-ng').forEach(bar => {
+    const w = bar.style.width; bar.style.width = '0';
+    requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = w; bar.style.transition = 'width 1.1s cubic-bezier(0.4,0,0.2,1)'; }));
+  });
+});
+</script>
+</body>
+</html>
